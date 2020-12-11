@@ -6,22 +6,6 @@ import java.util.Scanner;
 
 public class Cross {
 
-    static class Coordinate {
-        private final int x, y;
-        Coordinate(int y, int x) {
-            this.x = x;
-            this.y = y;
-        }
-
-        public int getX() {
-            return x;
-        }
-
-        public int getY() {
-            return y;
-        }
-    }
-
     private final int SIZE;
     private final int CHECK_SIZE;
     private final static char PLAYER_DOT = 'X';
@@ -141,10 +125,7 @@ public class Cross {
     private void makeAIStep() {
         System.out.println("Ходит AI.");
 
-        Coordinate danger = getPossibleWarnings();
-        if (isCellValid(danger.getY(), danger.getX())) {
-            setSym(danger.getY(), danger.getX(), AI_DOT);
-        } else {
+        if (!setAiDotToWin() && !setAiDotIfDanger()) {
             int x,y;
             do {
                 x = random.nextInt(SIZE);
@@ -154,88 +135,38 @@ public class Cross {
         }
     }
 
-    private Coordinate getPossibleWarnings() {
-        // Проверяем вертикальные и горизонтальные
-        int sumH;
-        int[] sumV = new int[SIZE];
+    private boolean setAiDotToWin() {
         for (int i = 0; i < SIZE; i++) {
-            sumH = 0;
             for (int j = 0; j < SIZE; j++) {
-                if (field[i][j] == PLAYER_DOT) {
-                    sumH++;
-                    if (sumH == CHECK_SIZE-1) {
-                        if (checkAiStep(i, j+1)) {
-                            return new Coordinate(i, j+1);
-                        }
-                        if (checkAiStep(i, j-CHECK_SIZE+1)) {
-                            return new Coordinate(i, j-CHECK_SIZE+1);
-                        }
-                        sumH = 0;
+                if (isCellEmpty(i, j)) {
+                    setSym(i, j, AI_DOT);
+                    if (checkWin(AI_DOT)) {
+                        setSym(i, j, AI_DOT);
+                        return true;
+                    } else {
+                        setSym(i, j, EMPTY_DOT);
                     }
-                    sumV[j]++;
-                    if (sumV[j] == CHECK_SIZE-1) {
-                        if (checkAiStep(i+1, j)) {
-                            return new Coordinate(i+1, j);
-                        }
-                        if (checkAiStep(i-CHECK_SIZE+1, j)) {
-                            return new Coordinate(i-CHECK_SIZE+1, j);
-                        }
-                        sumV[j] = 0;
-                    }
-                } else {
-                    sumH = 0; sumV[j] = 0;
                 }
             }
         }
+        return false;
+    }
 
-        // Проверяем диагональные
-        int delta = SIZE - CHECK_SIZE;
-        if (delta < 0) return new Coordinate(-1, -1);
-        int diagonalRL, diagonalLR, x;
-        for (int i = -delta; i <= delta; i++) {
-            diagonalRL = 0;
-            diagonalLR = 0;
+    private boolean setAiDotIfDanger() {
+        for (int i = 0; i < SIZE; i++) {
             for (int j = 0; j < SIZE; j++) {
-                x = i + j;
-                if (x >= 0 && x < SIZE) {
-                    if (field[j][x] == PLAYER_DOT) {
-                        diagonalRL++;
-                        if (diagonalRL == CHECK_SIZE - 1) {
-                            if (checkAiStep(j + 1, x + 1)) {
-                                return new Coordinate(j + 1, x + 1);
-                            }
-                            if (checkAiStep(j - CHECK_SIZE+1, x - CHECK_SIZE+1)) {
-                                return new Coordinate(j - CHECK_SIZE+1, x - CHECK_SIZE+1);
-                            }
-                            diagonalRL = 0;
-                        }
+                if (isCellEmpty(i, j)) {
+                    setSym(i, j, PLAYER_DOT);
+                    if (checkWin(PLAYER_DOT)) {
+                        setSym(i, j, AI_DOT);
+                        return true;
                     } else {
-                        diagonalRL = 0;
+                        setSym(i, j, EMPTY_DOT);
                     }
                 }
-
-                x = i + SIZE - j - 1;
-                if (x < SIZE && x >= 0) {
-                    if (field[j][x] == PLAYER_DOT) {
-                        diagonalLR++;
-                        if (diagonalLR == CHECK_SIZE - 1) {
-                            if (checkAiStep(j + 1, x - 1)) {
-                                return new Coordinate(j + 1, x - 1);
-                            }
-                            if (checkAiStep(j - CHECK_SIZE + 1, x + CHECK_SIZE - 1)) {
-                                return new Coordinate(j - CHECK_SIZE + 1, x + CHECK_SIZE - 1);
-                            }
-                            diagonalLR = 0;
-                        }
-                    } else {
-                        diagonalLR = 0;
-                    }
-                }
-
             }
         }
-
-            return new Coordinate(-1, -1);
+        return false;
     }
 
     private boolean checkWin(char sym) {
